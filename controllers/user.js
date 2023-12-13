@@ -1,6 +1,13 @@
 const sequelize = require("../configs/dbConfig");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+const genereteToken = ({ id, fullName, email, phone }) => {
+  return jwt.sign({ id, fullName, email, phone }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+};
 
 const signup = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -44,7 +51,7 @@ const signup = async (req, res) => {
     return res.status(201).json({
       status: true,
       data: user,
-      message: "Signedup successfully, please signin to continue...",
+      message: "Signedup successfully",
     });
   } catch (error) {
     await transaction.rollback();
@@ -54,4 +61,39 @@ const signup = async (req, res) => {
   }
 };
 
-module.exports = { signup };
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        status: false,
+        data: null,
+        message: "Email or password missing",
+      });
+    }
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ status: false, data: null, message: "User not found" });
+    }
+    const comparePassword = await bcrypt.compare(password, user.password);
+    if (user && !comparePassword) {
+      return res
+        .status(403)
+        .json({ status: false, data: null, message: "Invalid credentials" });
+    }
+    const token = genereteToken(user);
+    return res.status(201).json({
+      status: true,
+      data: { token },
+      message: "Logged in successfully",
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ status: false, data: null, message: error.message });
+  }
+};
+
+module.exports = { signup, login };

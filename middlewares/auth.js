@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+require("dotenv").config();
 
 const protect = async (req, res, next) => {
   try {
@@ -8,7 +9,7 @@ const protect = async (req, res, next) => {
       req.headers.authorization.startsWith("Bearer")
     ) {
       const token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(token, "UYGR$#%^&*UIHGHGCDXRSW");
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findByPk(decoded.id);
       if (!user) {
         return res

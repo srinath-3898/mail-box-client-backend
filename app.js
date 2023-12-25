@@ -15,13 +15,15 @@ app.use("/user", require("./routes/user"));
 app.use("/users", require("./routes/users"));
 app.use("/mail", require("./routes/mail"));
 
-User.hasMany(Mail);
-Mail.belongsTo(User);
+User.hasMany(Mail, { as: "SentMails", foreignKey: "fromUserId" });
+User.hasMany(Mail, { as: "ReceivedMails", foreignKey: "toUserId" });
+Mail.belongsTo(User, { as: "Sender", foreignKey: "fromUserId" });
+Mail.belongsTo(User, { as: "Receiver", foreignKey: "toUserId" });
 
 const port = process.env.PORT;
 
 sequelize
-  .sync()
+  .sync({ force: false })
   .then(() => {
     console.log("Database connected");
     return app.listen(port);
